@@ -14,12 +14,12 @@ For further information, contact Jonathan Klassen: jonathan.klassen@uconn.edu
 --------------------------------------------------------------------------------------------------------------------------------
 
 Table of Contents:
-	1. Algorithm purpose and overview
-	2. Pipeline overview
-	3. Dependancies 
-	4. mult_antiSMASH pipeline
-	5. cluster_pfam_BBH_comparison pipeline
-	6. Visualizing the output data using Cytoscape
+1. Algorithm purpose and overview
+2. Pipeline overview
+3. Dependancies 
+4. mult_antiSMASH pipeline
+5. cluster_pfam_BBH_comparison pipeline
+6. Visualizing the output data using Cytoscape
   
 --------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------
