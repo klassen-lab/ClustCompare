@@ -1,9 +1,9 @@
-# BGC_comparer
+# ClustCompare
 Pipeline to compare secondary metabolite biosynthetic gene clusters (BGCs)
 --------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------
 
-BGC_comparer
+ClustCompare
 
 Copyright Jonathan Klassen, 2018
 This program is distributed under a BSD open-access license. See the bottom of this README file for terms of this license.
@@ -28,7 +28,7 @@ Table of Contents:
 1. Algorithm purpose and overview
 --------------------------------------------------------------------------------------------------------------------------------
 
-The BGC_comparer comprises several piplines designed to compare secondary metabolite biosynthetic gene clusters (BGCs) to each other based on their orthologous domain content. (In principle any gene cluster could be analyzed using this protocol, not just BGCs). This pipeline takes a list of biosynthetic gene clusters as input and outputs a similarity score that compares each cluster to each other based on their shared domain content and the similarly of these domains to each other. This table can subsequently used in downstream applications, e.g., to make a similarity network using Cytoscape. 
+ClustCompare comprises several piplines designed to compare secondary metabolite biosynthetic gene clusters (BGCs) to each other based on their orthologous domain content. (In principle any gene cluster could be analyzed using this protocol, not just BGCs). This pipeline takes a list of biosynthetic gene clusters as input and outputs a similarity score that compares each cluster to each other based on their shared domain content and the similarly of these domains to each other. This table can subsequently used in downstream applications, e.g., to make a similarity network using Cytoscape. 
 
 Besides the core BGC comparison pipeline, scripts are also included to find gene clusters in input genomes and to generate metadata tables that complement the similarity score described above. Together, these scripts provide a complete pipeline to annotate and compare BGCs in any input genomes.
 
@@ -51,7 +51,7 @@ Additional folders and a CHANGELOG are produced by the antiSMASH_annotation.sh a
 3. Dependancies
 --------------------------------------------------------------------------------------------------------------------------------
 
-The following dependancies need to be installed before running the BGC_comparer pipeline. See the installation instructions provided by each link.
+The following dependancies need to be installed before running the ClustCompare pipeline. See the installation instructions provided by each link.
 
 - BioPerl: http://bioperl.org/INSTALL.html
 - Perl "Parallel::ForkManager" module: http://search.cpan.org/~yanick/Parallel-ForkManager-1.19/lib/Parallel/ForkManager.pm
