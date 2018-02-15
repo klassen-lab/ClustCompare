@@ -6,7 +6,7 @@ Pipeline to compare secondary metabolite biosynthetic gene clusters (BGCs)
 ClustCompare
 
 Copyright Jonathan Klassen, 2018
-This program is distributed under a BSD open-access license. See the bottom of this README file for terms of this license.
+This program is distributed under a GNU open-access license. See the accompanying LISCENSE file for terms of this license.
 
 For further information, contact Jonathan Klassen: jonathan.klassen@uconn.edu
 
@@ -38,13 +38,14 @@ Besides the core BGC comparison pipeline, scripts are also included to find gene
 The overall pipeline is designed to produce a network of BGC similarities. There are two overarching pipeline scripts (antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh) which each wrap several other scripts that perform each step of the BGC comparison pipeline. Each script create a table of node and edge attributes, respectively, where the nodes are each individual BGC and the edges are the similarities between each BGC. The overall pipeline is designed to use either annotated or unannotated genomes as inputs, which it then uses to predict BGCs as the basis for network construction. However, other data types can easily be accommodated by running each step of the pipeline separately using the appropriate input files. Most pipeline steps are multithreaded for computational efficiency.
 
 By default, the pipeline has the following directory structure, which is assumed by antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh:
+```
 BGC_comparer_v1/
 	|----- src/ (containing all pipeline scripts)
 	|----- Data/ (folder for all data used by the pipeline) 
 	|	|-----genomes/ (containing all input genomes for the pipeline)
 	|----- Results/ (folder for all results produced by the pipeline)
 	|----- README (this README file)
-
+```
 Additional folders and a CHANGELOG are produced by the antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh scripts to record and reorganize pipeline outputs. All annotations and intermediate files are moved to Data/ and all results tables are moved to Results/ by default. These can be customized using the appropriate options for each individual pipeline script.
 
 --------------------------------------------------------------------------------------------------------------------------------
@@ -73,24 +74,26 @@ Wrapper script that annotates BGCs in a series of input genomes and calculates v
 ---------------------
 (1) mult_antiSMASH.pl
 
-Takes as input a list of genomes to be annotated. This pipeline will run most efficiently using annotated input files (e.g., gbk or embl) and preserve any metadata associated with those input files, e.g., species names and descriptions. However, antiSMASH will annotate raw fa, fna, or fasta files using default metadata (albeit with a longer run time).
+Takes as input a list of genomes to be annotated. This pipeline will run most efficiently using annotated input files (e.g., gbk or embl) and preserve any metadata associated with those input files, e.g., species names and descriptions. However, antiSMASH will annotate raw fa, fna, or fasta files using default metadata (albeit with a longer run time). By default does not include antiSMASH's knownclusterblast functionality to shorten runtime.
+```
 
-DEPENDANCIES: run_antiSMASH.py, Perl "Parallel::ForkManager" module
+DEPENDANCIES: run_antiSMASH.py, Perl \"Parallel::ForkManager\" module
 
 USAGE:
--c	number of cores to use					DEFAULT: 1	e.g., perl mult_antiSMASH.pl -i inlist -c 4
+-c	number of cores to use					DEFAULT: 1		e.g., perl mult_antiSMASH.pl -i inlist -c 4
 -h	displays this usage statement (also using --help)
--i	input list of paths to the gbk files to be analyzed	REQUIRED	e.g., perl mult_antiSMASH.pl -i inlist
--q	run quietly, i.e., no STDOUT (Y or N)			DEFAULT: N	e.g., perl multantiSMASH.pl -i inlist -q Y
+-i	input list of paths to the gbk files to be analyzed	REQUIRED		e.g., perl mult_antiSMASH.pl -i inlist
+-k	enable the antiSMASH knownclusterblast function		DEFAULT: N		e.g., perl mult_antiSMASH.pl -i inlist -k Y
+-o	output file listing intput & output files		DEFAULT: files.list	e.g., perl mult_antiSMASH.pl -i inlist -o outputs.list
+-q	run quietly, i.e., no STDOUT (Y or N)			DEFAULT: N		e.g., perl multantiSMASH.pl -i inlist -q Y
 
 OUTPUT FILES:
-	for each input in the list specified by -i, a folder using the same name that contains the antiSMASH annotation for that genome
-
+	for each input in the list specified by -i, a folder that contains the antiSMASH annotation for that genome. Folders are linked to their corresponding input file in the table specified by -o.```
 ----------------------
 (2) cluster_renamer.pl
 
 Takes as input a list of gbk files, each containing a different BGC as annotated by antiSMASH. In principle, will run on non-antiSMASH clusters too but will not be able to extract data relateding to cluster type unless this information is included as a "/product=" annotation of the global "cluster" primary annotation object. Renames all clusters so that they have non-overlapping names, which is required for each cluster to be included as a unique analysis object. Produces a metadata table that links each renamed cluster to their source data, source genome (identified by unique sequence DESCRIPTION annotations), and cluster type. This table contains the metadata that relates to the nodes of the cluster similarity networks produced by this pipeline.
-
+```
 DEPENDANCIES: Perl "Parallel::ForkManager" module, BioPerl
 
 USAGE:
@@ -103,12 +106,12 @@ USAGE:
 
 OUTPUT FILES:
 	for each input in the list specified by -i, a folder using the same name that contains the antiSMASH annotation for that genome
-
+```
 --------------------------
 (3) clusters_per_genome.pl
 
 Parses the node table produced by cluster_renamer.pl to produce a table counting the number of each cluster type in each genome. Running this script is not necessary for subsequent pipeline steps.
-
+```
 DEPENDANCIES: none
 
 USAGE:
@@ -119,7 +122,7 @@ USAGE:
 
 OUTPUT FILES:
 	for each input in the list specified by -i, a folder using the same name that contains the antiSMASH annotation for that genome
-
+```
 --------------------------------------------------------------------------------------------------------------------------------
 4. cluster_pfam_BBH_comparison pipeline
 --------------------------------------------------------------------------------------------------------------------------------
@@ -135,7 +138,7 @@ Wrapper script for the pipeline, consisting of 7 steps: (1) mult_gbk_to_faa.pl t
 (1) mult_gbk_to_faa.pl
 
 Converts each gbk file listed in the input file list into a protein fasta (faa) file, the format needed for pfamscan.pl. Multithreaded.
-
+```
 DEPENDANCIES: Perl "Parallel::ForkManager" module, BioPerl
 
 USAGE:
@@ -147,12 +150,12 @@ USAGE:
 
 OUTPUT FILES:
 	an output directory that contains protein faas for each gbk file in the input file list
-
+```
 ----------------------
 (2) mult_pfamscan.pl
 
 Performs a pfamscan annotation of the domain content in each input faa file. Multithreaded. Requires explicitly specifying the folder in which the pfamscan script and its accompanying pfam HMMs (pressed using hmmpress) are located. 
-
+```
 DEPENDANCIES: Perl "Parallel::ForkManager" module, PfamScan and its accompanying HMMs executable and both in the same directory.
 
 USAGE:
@@ -165,12 +168,12 @@ USAGE:
 
 OUTPUT FILES:
 	a folder containing the pfamscan output for each file in the list of input files
-
+```
 ----------------------
 (3) mult_pfamscan_parser.pl
 
 Tabulates the number and identify of the pfam domains annotated in each BGC by pfamscan. Produces a separate multiple faa file for each BGC containing the sequence of each annotated domain in that BGC.
-
+```
 DEPENDANCIES: Perl "Parallel::ForkManager" module
 
 USAGE:
@@ -184,12 +187,12 @@ USAGE:
 
 OUTPUT FILES:
 	a folder containing faa files of the domains annotated by pfam in each cluster, and a table listing the domains in each cluster.
-
+```
 ----------------------
 (4) mult_blastp.pl
 
 Compares the pfam domains annotated in each BGC to all other domains annotated in all other BGCs included in the analysis using BLASTp. Requires a premade BLAST database containing all of the domains to be compared.
-
+```
 DEPENDANCIES: Perl "Parallel::ForkManager" module, blastp, premade BLAST databases of all BGC domains to be compared
 
 USAGE:
@@ -202,12 +205,12 @@ USAGE:
 
 OUTPUT FILES:
 	a folder containing the BLASTp results of the domains from each BGC compared to all domains
-
+```
 ----------------------
 (5) blastp_to_BBH_list.pl
 
 Parses results of the BLASTp comparison of each domain to all other domains included in the analysis to identify BBH relationships between domains present in two different cluster, i.e., orthologous domains shared by these clusters. Note: default parameters tuned for relatively closely-related sequences (70% identical)
-
+```
 DEPENDANCIES: none
 
 USAGE:
@@ -220,12 +223,12 @@ USAGE:
 
 OUTPUT FILES:
 	a table listing the single best BBHs for each domain comparison between two BGCs, and their percent identify to each other
-
+```
 ----------------------
 (6) make_cluster_similarities.pl
 
 Tabulate the number of domains that are shared between two BGCs, the proportion of domains in the clusters that are shared, and the percent identity shared by these domains. Includes all possible homologies between two clusters without filtering, to provide a master template on which cluster_similarity_parser.pl can be run using various settings.
-
+```
 DEPENDANCIES: none
 
 USAGE:
@@ -237,12 +240,12 @@ USAGE:
 
 OUTPUT FILES:
 	a table listing the number of domains that are shared between two BGCs (out of all possible domains) and how closely these domains are related to each other; this table contains all possible relationships without filtering
-
+```
 ----------------------
 (7) cluster_similarity_table_parser.pl
 
 Filters the raw output table from make_cluster_similarities.pl based on: (i) the minimum cluster similarity score (0 low, 1 high); (ii) the minimum average ortholog % identity; (iii) the minimum number of shared domains; (iv) the minimum % of shared domains. Note that setting the minimum average ortholog % identity to less than the % identity threshold used in blastp_to_BBH_list.pl will not cause further filtering.
-
+```
 DEPENDANCIES: none
 
 USAGE:
@@ -258,7 +261,7 @@ USAGE:
 
 OUTPUT FILES:
 	a table listing the number of domains that are shared between two BGCs (out of all possible domains) and how closely these domains are related to each other; this table contains only relationships passing the specified threshold filters
-
+```
 --------------------------------------------------------------------------------------------------------------------------------
 6. Visualizing the output data using Cytoscape
 --------------------------------------------------------------------------------------------------------------------------------
