@@ -76,7 +76,6 @@ Wrapper script that annotates BGCs in a series of input genomes and calculates v
 
 Takes as input a list of genomes to be annotated. This pipeline will run most efficiently using annotated input files (e.g., gbk or embl) and preserve any metadata associated with those input files, e.g., species names and descriptions. However, antiSMASH will annotate raw fa, fna, or fasta files using default metadata (albeit with a longer run time). By default does not include antiSMASH's knownclusterblast functionality to shorten runtime.
 ```
-
 DEPENDANCIES: run_antiSMASH.py, Perl \"Parallel::ForkManager\" module
 
 USAGE:
@@ -89,6 +88,7 @@ USAGE:
 
 OUTPUT FILES:
 	for each input in the list specified by -i, a folder that contains the antiSMASH annotation for that genome. Folders are linked to their corresponding input file in the table specified by -o.```
+```
 ----------------------
 (2) cluster_renamer.pl
 
