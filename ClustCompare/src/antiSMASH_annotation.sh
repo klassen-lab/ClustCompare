@@ -3,6 +3,7 @@
 # Script to annotate a batch of NCBI genomes using antiSMASH. Assumes that run_antismash.py works from terminal
 # Will put annotations in ../Data/ and modify ../CHANGELOG.txt
 # v3.0 January 2, 2018 - adapted to Jan 2018 script versions. Requires all genomes be located in ../Data/genomes. Runs on .gbk, .gbff, .fasta, .fna, .fa nucleotide formats.
+# v3.1 February 15, 2018 - Accommodates genomes.list output file
 
 # Add note to CHANGELOG.txt
 echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* antiSMASH_annotations.sh v3.0 started" >> ../CHANGELOG.txt 
@@ -83,6 +84,7 @@ else
 	mkdir ../Data/antiSMASH_annotations
 fi
 mv */ ../Data/antiSMASH_annotations
+mv files.list ../Data/antiSMASH_annotations
 
 # runs cluster_renamer.pl on newly annotated gbks
 ls ../Data/antiSMASH_annotations/*/*cluster*.gbk > BGCs.list
