@@ -126,7 +126,7 @@ for f in $(eval echo "$INPUT_DATA_PATH/*.fa"); do
 done
 
 # run mult_antiSMASH.pl
-#perl mult_antiSMASH.pl -i genomes.list -c $NPROC
+perl mult_antiSMASH.pl -i genomes.list -c $NPROC
 
 # moves output antiSMASH directories to ../Data/antiSMASH_annotations/
 if [ -d $OUTPUT_DIR ]
