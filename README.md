@@ -17,9 +17,10 @@ Table of Contents:
 1. Algorithm purpose and overview
 2. Pipeline overview
 3. Dependancies 
-4. mult_antiSMASH pipeline
-5. cluster_pfam_BBH_comparison pipeline
-6. Visualizing the output data using Cytoscape
+4. Performing cluster annotations using the mult_antiSMASH pipeline
+5. Comparing clusters using cluster_pfam_BBH_comparison pipeline
+6. Detecting putatively fragmented clusters using the find_cluster_completeness pipeline
+7. Visualizing the output data using Cytoscape
   
 --------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ Besides the core BGC comparison pipeline, scripts are also included to find gene
 --------------------------------------------------------------------------------------------------------------------------------
 2. Pipeline overview
 --------------------------------------------------------------------------------------------------------------------------------
-The overall pipeline is designed to produce a network of BGC similarities. There are two overarching pipeline scripts (antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh) which each wrap several other scripts that perform each step of the BGC comparison pipeline. Each script create a table of node and edge attributes, respectively, where the nodes are each individual BGC and the edges are the similarities between each BGC. The overall pipeline is designed to use either annotated or unannotated genomes as inputs, which it then uses to predict BGCs as the basis for network construction. However, other data types can easily be accommodated by running each step of the pipeline separately using the appropriate input files. Most pipeline steps are multithreaded for computational efficiency.
+The overall pipeline is designed to produce a network of BGC similarities. There are several overarching pipeline shell scripts that each wrap several other scripts that perform each step of the BGC comparison pipeline. Together, these scripts create tables of node and edge attributes, where the nodes are each individual BGC and the edges are the similarities between each BGC. The overall pipeline is designed to use either annotated or unannotated genomes as inputs, which it then uses to predict BGCs as the basis for network construction. However, other data types can easily be accommodated by running each step of the pipeline separately using the appropriate input files. Most pipeline steps are multithreaded for computational efficiency.
 
 By default, the pipeline has the following directory structure, which is assumed by antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh:
 ```
@@ -46,7 +47,7 @@ BGC_comparer_v1/
 	|----- Results/ (folder for all results produced by the pipeline)
 	|----- README (this README file)
 ```
-Additional folders and a CHANGELOG are produced by the antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh scripts to record and reorganize pipeline outputs. All annotations and intermediate files are moved to Data/ and all results tables are moved to Results/ by default. These can be customized using the appropriate options for each individual pipeline script.
+Additional folders and a CHANGELOG are produced by the shell scripts to record and reorganize pipeline outputs. All annotations and intermediate files are moved to Data/ and all results tables are moved to Results/ by default. These can be customized using the appropriate options for each individual pipeline script.
 
 --------------------------------------------------------------------------------------------------------------------------------
 3. Dependancies
@@ -59,9 +60,10 @@ The following dependancies need to be installed before running the ClustCompare 
 - antiSMASH: http://docs.antismash.secondarymetabolites.org/install/
 - pfamscan: ftp://ftp.ebi.ac.uk/pub/databases/Pfam/Tools/ Note that the filepath leading to these files needs to be specified for mult_pfamscan.pl (and therefore also in cluster_pfam_BBH_comparison.sh).
 - BLAST+: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download
+- MUMMER: http://mummer.sourceforge.net/
 
 --------------------------------------------------------------------------------------------------------------------------------
-4. mult_antiSMASH pipeline
+4. Performing cluster annotations using the mult_antiSMASH pipeline
 --------------------------------------------------------------------------------------------------------------------------------
 
 Overview: These scripts run annotate BGCs on a list of genomes specified by the user. Each script can either be run individually to accommodate preexisting analyses, or as a unit to run the entire pipeline on a set of genomes for which BGCs have not yet been annotated.
@@ -69,8 +71,16 @@ Overview: These scripts run annotate BGCs on a list of genomes specified by the 
 -----------------------
 antiSMASH_annotation.sh
 
-Wrapper script that annotates BGCs in a series of input genomes and calculates various metadata relating to these clusters for subsequent steps. Includes three steps: (1) mult_antiSMASH.pl to run antiSMASH on multiple genomes to annotate the BGCs that they contain; (2) cluster_renamer.pl to collate the clusters annotated by antiSMASH and rename them as unique objects for subsequent analyses; also tabulates metadata for each annotated cluster (i.e., the nodes in a final cluster similarity network produced by subsequent steps); (3) clusters_per_genome to count the number of clusters of each type present in each genome. antiSMASH_annotation.sh runs without parameters, looking for input genomes in ../Data/genomes (i.e., assumes script is run from src/ as downloaded). Accepts .gbk, .gbff, .embl, .fna, .fa, .fasta nucleotide files as unput. Will gunzip if required. Runs mult_antiSMASH using all cores. Move all annotations to ../Data/antiSMASH_annotations
-
+Wrapper script that annotates BGCs in a series of input genomes and calculates various metadata relating to these clusters for subsequent steps. Includes three steps: (1) mult_antiSMASH.pl to run antiSMASH on multiple genomes to annotate the BGCs that they contain; (2) cluster_renamer.pl to collate the clusters annotated by antiSMASH and rename them as unique objects for subsequent analyses; also tabulates metadata for each annotated cluster (i.e., the nodes in a final cluster similarity network produced by subsequent steps); (3) clusters_per_genome to count the number of clusters of each type present in each genome. antiSMASH_annotation.sh looks for input genomes in the folder specified by -i and accepts .gbk, .gbff, .embl, .fna, .fa, .fasta nucleotide files as unput. Will gunzip if required. Runs mult_antiSMASH using all cores. Move all annotations to the folder specified by -o and results tables to the folder specified by -r.
+```
+USAGE:"
+-c    number of CPU threads						DEFAULT: the number of available cores
+-i    path to directory containing input data files			DEFAULT: ../Data/genomes
+-o    path to directory where output data files should be placed	DEFAULT: ../Data/antiSMASH_annotations
+-r    path to directory where output results files should be placed	DEFAULT: ../Results
+-l    path to log file to update					DEFAULT: ../CHANGELOG.txt
+-h    print this help message
+```
 ---------------------
 (1) mult_antiSMASH.pl
 
@@ -94,18 +104,20 @@ OUTPUT FILES:
 
 Takes as input a list of gbk files, each containing a different BGC as annotated by antiSMASH. In principle, will run on non-antiSMASH clusters too but will not be able to extract data relateding to cluster type unless this information is included as a "/product=" annotation of the global "cluster" primary annotation object. Renames all clusters so that they have non-overlapping names, which is required for each cluster to be included as a unique analysis object. Produces a metadata table that links each renamed cluster to their source data, source genome (identified by unique sequence DESCRIPTION annotations), and cluster type. This table contains the metadata that relates to the nodes of the cluster similarity networks produced by this pipeline.
 ```
-DEPENDANCIES: Perl "Parallel::ForkManager" module, BioPerl
+DEPENDANCIES: Perl \"Parallel::ForkManager\" module, BioPerl
 
 USAGE:
--c	number of cores to use						DEFAULT: 1		e.g., perl cluster_renamer.pl -i inlist -c 4
--d	output directory for renamed cluster gbk files			DEFAULT: BGCs		e.g., perl cluster_renamer.pl -i inlist -d renamed_clusters
+-c	number of cores to use								DEFAULT: 1			e.g., perl cluster_renamer.pl -i inlist -c 4
+-d	output directory for renamed cluster gbk files					DEFAULT: BGC_gbks		e.g., perl cluster_renamer.pl -i inlist -d renamed_clusters
 -h	displays this usage statement (also using --help)
--i	input list of paths to the cluster gbk files to be analyzed	REQUIRED		e.g., perl cluster_renamer.pl -i inlist
--o	output tab-delimited table of cluster names (node table)	DEFAULT: nodes.tsv	e.g., perl cluster_renamer.pl -i inlist -o clusters.tsv
--q	run quietly, i.e., no STDOUT (Y or N)				DEFAULT: N		e.g., perl cluster_renamer.pl -i inlist -q Y
+-i	input list of paths to the cluster gbk files to be analyzed			REQUIRED			e.g., perl cluster_renamer.pl -i inlist
+-j	input table of source data files and corresponding antiSMASH file directories	DEFAULT: none			e.g., perl cluster_renamer.pl -i inlist -j ../Data/antiSMASH_annotations/files.list
+-l	output tab-delimited look-up table linking clusters to source data		DEFAULT: BGC_file_lookup.tsv	e.g., perl cluster_renamer.pl -i inlist -l lookup
+-o	output tab-delimited table of cluster names (node table)			DEFAULT: nodes.tsv		e.g., perl cluster_renamer.pl -i inlist -o clusters.tsv
+-q	run quietly, i.e., no STDOUT (Y or N)						DEFAULT: N			e.g., perl cluster_renamer.pl -i inlist -q Y
 
 OUTPUT FILES:
-	for each input in the list specified by -i, a folder using the same name that contains the antiSMASH annotation for that genome
+	A table specified by -o lists metadata for each cluster, such as can be used to annotate nodes in a cluster similarity network. A second table specified by -l produces a look-up table linking each cluster to their cognate genomes and scaffolds.
 ```
 --------------------------
 (3) clusters_per_genome.pl
@@ -124,7 +136,7 @@ OUTPUT FILES:
 	for each input in the list specified by -i, a folder using the same name that contains the antiSMASH annotation for that genome
 ```
 --------------------------------------------------------------------------------------------------------------------------------
-4. cluster_pfam_BBH_comparison pipeline
+5. Comparing clusters using cluster_pfam_BBH_comparison pipeline
 --------------------------------------------------------------------------------------------------------------------------------
 
 These scripts compare the orthologous pfam domain content between a set of input BGCs. The output of this pipeline is a table of BGC similarities, i.e., a table of edges in a cluster similarity networks that complements the node tables produced by the mult_antiSMASH pipeline described in section 2 above. 
@@ -263,7 +275,48 @@ OUTPUT FILES:
 	a table listing the number of domains that are shared between two BGCs (out of all possible domains) and how closely these domains are related to each other; this table contains only relationships passing the specified threshold filters
 ```
 --------------------------------------------------------------------------------------------------------------------------------
-6. Visualizing the output data using Cytoscape
+6. Detecting putatively fragmented clusters using the find_cluster_completeness pipeline
+--------------------------------------------------------------------------------------------------------------------------------
+
+Overview: This short pipeline can follow the antiSMASH_annotation.sh pipeline and can infer clusters that are putatively fragmented based on their overlapping a contig end. Note that antiSMASH is conservative in calling cluster boundaries, and so the cluster boundaries predicted by antiSMASH are typically larger than the true cluster boundaries. This means that the following analysis will inherently overestimate the extent of cluster annotation. However, it can serve as a starting place to match cluster fragments that occur on multiple contigs. See Klassen and Currie BMC Genomics 2012 13:14 https://bmcgenomics.biomedcentral.com/articles/10.1186/1471-2164-13-14 for more information on this approach.
+
+-----------------------
+find_cluster_completeness.sh
+
+A short wrapper script that runs find_cluster_completeness.pl and sorts ouput files similar to the other shell scripts in this pipeline. Requires outputs produced by antiSMASH_annotation.sh, specifically the cluster_renamer.pl step, as specified by -i and -j. Moves all annotations to the folder specified by -o and results tables to the folder specified by -r.
+
+```
+USAGE:"
+-c    number of CPU threads						DEFAULT: the number of available cores
+-i    path to input lookup table linking BGCs to their source genomes	DEFAULT: ../Results/BGC_file_lookup.tsv
+-j    path to input nodes.tsv file for updating				DEFAULT: ../Results/nodes.tsv
+-o    path to directory where output data files should be placed	DEFAULT: ../Data/BGC_fragmentation
+-r    path to directory where output results files should be placed	DEFAULT: ../Results
+-l    path to log file to update					DEFAULT: ../CHANGELOG.txt
+-h    print this help message
+```
+-----------------------
+(1) find_cluster_completeness.pl 
+
+Uses the tables produced by cluster_renamer.pl to identify source genomes for each annotated cluster, and aligns the clusters to these genomes using nucmer. Fragmented clusters are defined as those that either start at position 1 of a source contig or end at the last position of that contig. The full output of this analysis is stored in the table specified by -o. Fragmentation status is also added to the node table produced by cluster_renamer.pl, as specified by -n, and uses a Boolean notation similar to that used by the Prodigal gene prediction tool: 00 - no fragmentation; 10 - 5' fragmentation; 01 - 3' fragmentation; 11 - both 5' and 3' fragmentation. Inprocessed output files are stored in the folder specified by -p.
+```
+DEPENDANCIES: nucmer, Perl \"Parallel::ForkManager\" module
+
+USAGE:
+-c	number of cores to use							DEFAULT: 1				e.g., perl find_cluster_completeness -i ../Results/BGC_file_lookup.tsv -j ../Results/nodes.tsv -c 4
+-h	displays this usage statement (also using --help)
+-i	input table matching source gbk files to the BGCs annotated on them	REQUIRED				e.g., perl find_cluster_completeness -i files.list -j ../Results/nodes.tsv 
+-j	input node table to add fragmentation data to				REQUIRED 				e.g., perl find_cluster_completeness -i ../Results/BGC_file_lookup.tsv -j nodes.tsv 
+-n	output node table, modified from -j input to contain fragmentation	DEFAULT: nodes.tsv			e.g., perl find_cluster_completeness -i ../Results/BGC_file_lookup.tsv -j ../Results/nodes.tsv -n nodes.table
+-o	output table describing the alignment of each BGC to their source seq	DEFAULT: BGC_fragmentation.tsv		e.g., perl find_cluster_completeness -i ../Results/BGC_file_lookup.tsv -j ../Results/nodes.tsv -o BGC_fragmentataion.table
+-p	output folder for alignment outputs					DEFAULT: ../Data/BGC_fragmentation	e.g., perl find_cluster_completeness -i ../Results/BGC_file_lookup.tsv -j ../Results/nodes.tsv -p BGC_fragmentation
+-q	run quietly, i.e., no STDOUT (Y or N)					DEFAULT: N				e.g., perl find_cluster_completeness -i ../Results/BGC_file_lookup.tsv -j ../Results/nodes.tsv -q Y
+
+OUTPUT FILES:
+	The table specified by -o contains the alignment of each BGC to the contig on which wat annotated and its fragmentation status, as judged by the BGC ending at a contig edge. If specified, the node table is updated with the BGC fragmentation status such that these data can be annotated on Cytoscape BGC similarity network.
+```
+--------------------------------------------------------------------------------------------------------------------------------
+7. Visualizing the output data using Cytoscape
 --------------------------------------------------------------------------------------------------------------------------------
 
 The network produced by this pipeline can easily be visualized using standard network visualization. The section describes how to use Cytoscape  to achieve this. 
