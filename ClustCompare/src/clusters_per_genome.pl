@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 #
 # Jonathan Klassen
-# # v2.0 - January 4, 2018 - complete rewrite, derives new table from cluster_renamer.pl output table
+# v2.0 - January 4, 2018 - complete rewrite, derives new table from cluster_renamer.pl output table
+# v2.1 - February 21, 2018 - slight tweak to accommodate modifed nodes.tsv
 #
 # script counts the number of each cluster type within each genome (i.e., unique DESCRIPTION field)
 
@@ -62,7 +63,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-clusters_per_genome.pl	Jonathan Klassen	v2.0	Jan 4, 2018
+clusters_per_genome.pl	Jonathan Klassen	v2.1	Jan 4, 2018
 
 parameters used:
 	input file = $options{infile}
@@ -82,7 +83,7 @@ open (INFILE, $options{infile}) or die $usage;
 while (<INFILE>){
 	s/\s+$//;
 	my @line = split /\t/;
-	my $type = $line[3];
+	my $type = $line[2];
 	my $descr = $line[1];
 	$clusters{$descr}{$type}++;
 	$types{$type} = "y";

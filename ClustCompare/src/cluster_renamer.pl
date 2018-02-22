@@ -5,6 +5,7 @@
 # v1.1 - June 22/17 - captures hybrid cluster types, removes extra row from output table
 # v1.2 - June 30/17 - assumes new table each time
 # v2.0 - January 2, 2018 - formal input parameters, more generalizable input
+# v3.0 - February 21, 2018 - separates node table metadata from file lookups as a separate table
 #
 # script collates and renames the clusters from each antiSMASH genomer
 # input is a list of antiSMASH clusters
@@ -26,15 +27,17 @@ my $usage = "cluster_renamer.pl
 DEPENDANCIES: Perl \"Parallel::ForkManager\" module, BioPerl
 
 USAGE:
--c	number of cores to use						DEFAULT: 1		e.g., perl cluster_renamer.pl -i inlist -c 4
--d	output directory for renamed cluster gbk files			DEFAULT: BGC_gbks	e.g., perl cluster_renamer.pl -i inlist -d renamed_clusters
+-c	number of cores to use								DEFAULT: 1			e.g., perl cluster_renamer.pl -i inlist -c 4
+-d	output directory for renamed cluster gbk files					DEFAULT: BGC_gbks		e.g., perl cluster_renamer.pl -i inlist -d renamed_clusters
 -h	displays this usage statement (also using --help)
--i	input list of paths to the cluster gbk files to be analyzed	REQUIRED		e.g., perl cluster_renamer.pl -i inlist
--o	output tab-delimited table of cluster names (node table)	DEFAULT: nodes.tsv	e.g., perl cluster_renamer.pl -i inlist -o clusters.tsv
--q	run quietly, i.e., no STDOUT (Y or N)				DEFAULT: N		e.g., perl cluster_renamer.pl -i inlist -q Y
+-i	input list of paths to the cluster gbk files to be analyzed			REQUIRED			e.g., perl cluster_renamer.pl -i inlist
+-j	input table of source data files and corresponding antiSMASH file directories	DEFAULT: none			e.g., perl cluster_renamer.pl -i inlist -j ../Data/antiSMASH_annotations/files.list
+-l	output tab-delimited look-up table linking clusters to source data		DEFAULT: BGC_file_lookup.tsv	e.g., perl cluster_renamer.pl -i inlist -l lookup
+-o	output tab-delimited table of cluster names (node table)			DEFAULT: nodes.tsv		e.g., perl cluster_renamer.pl -i inlist -o clusters.tsv
+-q	run quietly, i.e., no STDOUT (Y or N)						DEFAULT: N			e.g., perl cluster_renamer.pl -i inlist -q Y
 
 OUTPUT FILES:
-	for each input in the list specified by -i, a folder using the same name that contains the antiSMASH annotation for that genome
+	A table specified by -o lists metadata for each cluster, such as can be used to annotate nodes in a cluster similarity network. A second table specified by -l produces a look-up table linking each cluster to their cognate genomes and scaffolds.
 ";
 
 # input arguements
@@ -46,6 +49,8 @@ GetOptions(
 	"h"    => \$options{help},
 	"help" => \$options{help},
 	"i=s"  => \$options{infile},
+	"j=s"  => \$options{indirtable},
+	"l=s"  => \$options{outlookup},
 	"o=s"  => \$options{outnodes},
 	"q=s"  => \$options{quiet}
 );
@@ -60,10 +65,12 @@ die "Input file is not specified:\n, $usage" if (!$options{infile});
 
 # defaut arguments
 
-unless ($options{cores}){    $options{cores} = 1};
-unless ($options{outdir}){   $options{outdir} = "BGC_gbks"};
-unless ($options{outnodes}){ $options{outnodes} = "nodes.tsv"};
-unless ($options{quiet}){    $options{quiet} = "N"};
+unless ($options{cores}){      $options{cores} = 1};
+unless ($options{outdir}){     $options{outdir} = "BGC_gbks"};
+unless ($options{indirtable}){ $options{indirtable} = "Not specified"};
+unless ($options{outnodes}){   $options{outnodes} = "nodes.tsv"};
+unless ($options{outlookup}){  $options{outlookup} = "BGC_file_lookup.tsv"};
+unless ($options{quiet}){      $options{quiet} = "N"};
 
 # mystery input flags not allowed
 
@@ -76,13 +83,15 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-cluster_renamer.pl	Jonathan Klassen	v2.0	Jan 2, 2018
+cluster_renamer.pl	Jonathan Klassen	v3.0	Feb 21, 2018
 
 parameters used:
 	input file = $options{infile}
+	input table listing annotation directories = $options{indirtable}
 	output directory for renamed BGC gbks = $options{outdir}\/
-	number of cores = $options{cores}
 	output nodes table = $options{outnodes}
+	output file lookup table = $options{outlookup}
+	number of cores = $options{cores}
 	quiet = $options{quiet}
 -----------------------------------------------------------------------------
 " if ($options{quiet} eq "N");
@@ -92,12 +101,30 @@ parameters used:
 #############################################################################
 
 my @clusters;
-open (INLIST, $options{infile}) or die $usage;
+open (INLIST, $options{infile}) or die "Cannot open $options{infile}\n$usage";
 
 while (<INLIST>){
 	s/\s+$//;
 	next unless ($_ =~ /\w/);
 	push @clusters, $_;
+}
+
+#############################################################################
+# Loads table linking genomes to antiSMASH output directories
+#############################################################################
+
+my %clusterdirs;
+unless ($options{indirtable} eq "Not specified"){
+	open (INDIRS, "$options{indirtable}") or die "Cannot open $options{indirtable}\n$usage";
+	<INDIRS>; # assumes header line
+	while (<INDIRS>){
+
+		s/\s+$//;
+		my @line = split /\t/, $_;
+#		print "@line\n";
+		$clusterdirs{$line[1]} = $line[0];
+	}
+#die join "**", keys %clusterdirs;
 }
 
 #############################################################################
@@ -112,10 +139,9 @@ if (-d $options{outdir}){ die "$options{outdir}\/ already exists, existing clust
 
 mkdir $options{outdir} or die "Cannot make $options{outdir}";
 
-# open output file
+# make a temporary output file
 
-open (OUTNODES, ">$options{outnodes}") or die "Cannot open output node file $options{outnodes}";
-print OUTNODES "Cluster_id\tSource_description\tSource_file\tCluster_type\tCluster_contig_accession\n";
+open (TEMP, ">temp") or die "Cannot open temporary output file in working directory";
 
 # multithreaded cluster parsing
 
@@ -125,11 +151,57 @@ for my $a (0..$#clusters){
 	$pm->start and next;
 	my @return = cluster_parser($a);
 	system "cp $return[2] $options{outdir}/cluster$a.gbk";
-	print OUTNODES "cluster$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\n";
+	print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\n";
 	$pm->finish;
 }
 $pm->wait_all_children();
 my $counter = 0;
+
+#############################################################################
+# Generate final tables
+#############################################################################
+
+# collate data from temp output file
+
+my %collated_data;
+open (INTEMP, "temp") or die "Cannot open temporary output file in working directory";
+while (<INTEMP>){
+	s/\s+$//;
+	my @line = split /\t/, $_;
+	$collated_data{$line[0]}{Source_description} = $line[1];
+	$collated_data{$line[0]}{Cluster_file} = $line[2];
+	$collated_data{$line[0]}{Cluster_type} = $line[3];
+	$collated_data{$line[0]}{Source_contig_accession} = $line[4];
+}
+system "rm temp";
+
+# generate node output file
+
+open (OUTNODES, ">$options{outnodes}") or die "Cannot open output node file $options{outnodes}\n$usage";
+print OUTNODES "Cluster_id\tSource_description\tCluster_type\n";
+foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
+	my $num = $cluster_id + 1;
+	print OUTNODES "cluster$num\t$collated_data{$cluster_id}{Source_description}\t$collated_data{$cluster_id}{Cluster_type}\n";
+}
+
+# generate lookup table output file
+
+open (OUTLOOKUP, ">$options{outlookup}") or die "Cannot open output lookup table file $options{outlookup}\n$usage";
+print OUTLOOKUP "Cluster_id\tCluster_file\tSource_genome_file\tSource_contig_accession\n";
+foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
+	my $num = $cluster_id + 1;
+	print OUTLOOKUP "cluster$num\t$collated_data{$cluster_id}{Cluster_file}\t";
+	my $dirname = $collated_data{$cluster_id}{Cluster_file};
+	$dirname =~ s/\/(\w|\.|\[|\]|\(|\))+$//;
+	$dirname =~ s/^.+\///;
+	if ($clusterdirs{$dirname}){
+		print OUTLOOKUP "$clusterdirs{$dirname}\t";
+	}
+	else {
+		print OUTLOOKUP "NA\t";
+	}
+	print OUTLOOKUP "$collated_data{$cluster_id}{Source_contig_accession}\n";
+}
 
 #############################################################################
 # Subroutine to collate BGCs 
