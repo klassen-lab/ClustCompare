@@ -32,7 +32,7 @@ USAGE:
 -d	output directory for renamed cluster gbk files					DEFAULT: BGC_gbks		e.g., perl cluster_renamer.pl -i inlist -d renamed_clusters
 -h	displays this usage statement (also using --help)
 -i	input list of paths to the cluster gbk files to be analyzed			REQUIRED			e.g., perl cluster_renamer.pl -i inlist
--j	input table of source data files and corresponding antiSMASH file directories	DEFAULT: none			e.g., perl cluster_renamer.pl -i inlist -j ../Data/antiSMASH_annotations/files.list
+-j	input table of source data files and corresponding antiSMASH file directories	REQUIRED			e.g., perl cluster_renamer.pl -i inlist -j ../Data/antiSMASH_annotations/files.list
 -l	output tab-delimited look-up table linking clusters to source data		DEFAULT: BGC_file_lookup.tsv	e.g., perl cluster_renamer.pl -i inlist -l lookup
 -o	output tab-delimited table of cluster names (node table)			DEFAULT: nodes.tsv		e.g., perl cluster_renamer.pl -i inlist -o clusters.tsv
 -q	run quietly, i.e., no STDOUT (Y or N)						DEFAULT: N			e.g., perl cluster_renamer.pl -i inlist -q Y
@@ -62,13 +62,13 @@ die $usage if ($options{help});
 
 # required arguements
 
-die "Input file is not specified:\n, $usage" if (!$options{infile});
+die "Input list of paths to the cluster gbk files to be analyzed is not specified:\n, $usage" if (!$options{infile});
+die "Input table of source data files and corresponding antiSMASH file directories is not specified:\n, $usage" if (!$options{indirtable});
 
 # defaut arguments
 
 unless ($options{cores}){      $options{cores} = 1};
 unless ($options{outdir}){     $options{outdir} = "BGC_gbks"};
-unless ($options{indirtable}){ $options{indirtable} = "Not specified"};
 unless ($options{outnodes}){   $options{outnodes} = "nodes.tsv"};
 unless ($options{outlookup}){  $options{outlookup} = "BGC_file_lookup.tsv"};
 unless ($options{quiet}){      $options{quiet} = "N"};
