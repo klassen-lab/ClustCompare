@@ -2,6 +2,7 @@
 #
 # Jonathan Klassen
 # v2.0 - January 6, 2018 - formal input parameters, more generalizable input, multithreaded
+# v2.1 - February 27, 2018 - Slight modification to outdir creation
 #
 # script runs pfamscan.pl on a list of input faa files
 # assumes that Pfam HMMs are located in the same place as the pfamscan script
@@ -51,7 +52,7 @@ die $usage if ($options{help});
 # required arguements
 
 die "Input file is not specified:\n $usage" if (!$options{infile});
-die "Directory containing pfamscan.pl and its HMMS is not specified:\n $usage" if (!$options{pfamdir});
+die "Directory containing pfamscan.pl and its HMMs is not specified:\n $usage" if (!$options{pfamdir});
 
 # defaut arguments
 
@@ -70,7 +71,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-mult_pfamscan.pl	Jonathan Klassen	v2.0	Jan 6, 2018
+mult_pfamscan.pl	Jonathan Klassen	v2.1	Feb 27, 2018
 
 parameters used:
 	input file = $options{infile}
@@ -100,11 +101,9 @@ while (<INLIST>){
 
 # check if output directory exists
 
-if (-d $options{outdir}){ die "$options{outdir}\/ already exists, existing mult_pfamscan.pl\n";}
-
-# else make new output directory
-
-mkdir $options{outdir} or die "Cannot make $options{outdir}";
+unless (-d $options{outdir}){ 
+	mkdir $options{outdir} or die "Cannot make $options{outdir}";
+}
 
 # multithreaded pfamscan
 

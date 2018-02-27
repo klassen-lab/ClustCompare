@@ -2,6 +2,7 @@
 #
 # Jonathan Klassen
 # v2.0 - January 6, 2018 - formal input parameters, more generalizable input, multithreaded parsing of pfamscan outputs (not gathering faas)
+# v2.1 - February 27, 2018 - Slight modification to outdir creation
 #
 # script uses parses a list of PfamScan output files to create a summary table of domains in each input BGC
 # also extracts the faa sequence for each detected domain for comparison to each other in subsequent steps
@@ -73,7 +74,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-mult_pfamscan_parser.pl		Jonathan Klassen	v2.0	Jan 6, 2018
+mult_pfamscan_parser.pl		Jonathan Klassen	v2.1	Feb 27, 2018
 
 parameters used:
 	input list of pfamscan files = $options{infile}
@@ -138,11 +139,9 @@ for my $counter (0..$#infaas){
 
 # check if output directory exists
 
-if (-d $options{outdir}){ die "$options{outdir}\/ already exists, existing mult_pfamscan_parser.pl\n";}
-
-# else make new output directory
-
-mkdir $options{outdir} or die "Cannot make $options{outdir}";
+unless (-d $options{outdir}){ 
+	mkdir $options{outdir} or die "Cannot make $options{outdir}";
+}
 
 # multithreaded pfamscan
 

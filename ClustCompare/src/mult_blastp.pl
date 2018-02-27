@@ -2,6 +2,7 @@
 #
 # Jonathan Klassen
 # v2.0 - January 6, 2018 - formal input parameters, more generalizable input, multithreaded
+# v2.1 - February 27, 2018 - Slight modification to outdir creation
 #
 # BLASTs domains from set of BGCs against a database of all domains (db created separately, batteries not included)
 # Assumes BLASTp is in $PATH
@@ -71,7 +72,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-mult_blastp.pl	Jonathan Klassen	v2.0	Jan 6, 2018
+mult_blastp.pl	Jonathan Klassen	v2.1	Feb 27, 2018
 
 parameters used:
 	input file = $options{infile}
@@ -101,11 +102,9 @@ while (<INLIST>){
 
 # check if output directory exists
 
-if (-d $options{outdir}){ die "$options{outdir}\/ already exists, existing mult_blastp.pl\n";}
-
-# else make new output directory
-
-mkdir $options{outdir} or die "Cannot make $options{outdir}";
+unless (-d $options{outdir}){ 
+	mkdir $options{outdir} or die "Cannot make $options{outdir}";
+}
 
 # multithreaded pfamscan
 
@@ -132,10 +131,12 @@ sub run_blastp($){
 
 	(my $name = $infiles[$counter]) =~ s/\.\w+$//;
 	$name =~ s/^.+\///;
+	(my $db_name = $options{db}) =~ s/^.+\///;
+	$db_name =~ s/\.\w+$//;
 
 	# run BLASTp
 
-	system "blastp -query $infiles[$counter] -db $options{db} -evalue 1e-5 -out $options{outdir}/$name\_vs_$options{db}.blastp -outfmt \"7 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen\"";
+	system "blastp -query $infiles[$counter] -db $options{db} -evalue 1e-5 -out $options{outdir}/$name\_vs_$db_name.blastp -outfmt \"7 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen\"";
 
 }
 
