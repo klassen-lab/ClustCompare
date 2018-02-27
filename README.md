@@ -89,15 +89,16 @@ Takes as input a list of genomes to be annotated. This pipeline will run most ef
 DEPENDANCIES: run_antiSMASH.py, Perl \"Parallel::ForkManager\" module
 
 USAGE:
--c	number of cores to use					DEFAULT: 1		e.g., perl mult_antiSMASH.pl -i inlist -c 4
+-c	number of cores to use					DEFAULT: 1			e.g., perl mult_antiSMASH.pl -i inlist -c 4
+-d	output directory for antiSMASH output folders		DEFAULT: ./			e.g., perl mult_antiSMASH.pl -i inlist -d ../Data/antiSMASH_annotations/
 -h	displays this usage statement (also using --help)
--i	input list of paths to the gbk files to be analyzed	REQUIRED		e.g., perl mult_antiSMASH.pl -i inlist
--k	enable the antiSMASH knownclusterblast function		DEFAULT: N		e.g., perl mult_antiSMASH.pl -i inlist -k Y
--o	output file listing intput & output files		DEFAULT: files.list	e.g., perl mult_antiSMASH.pl -i inlist -o outputs.list
--q	run quietly, i.e., no STDOUT (Y or N)			DEFAULT: N		e.g., perl multantiSMASH.pl -i inlist -q Y
+-i	input list of paths to the gbk files to be analyzed	REQUIRED			e.g., perl mult_antiSMASH.pl -i inlist
+-k	enable the antiSMASH knownclusterblast function		DEFAULT: N			e.g., perl mult_antiSMASH.pl -i inlist -k Y
+-o	output file listing intput & output files		DEFAULT: annotation_lookup.tsv	e.g., perl mult_antiSMASH.pl -i inlist -o outputs.list
+-q	run quietly, i.e., no STDOUT (Y or N)			DEFAULT: N			e.g., perl mult_antiSMASH.pl -i inlist -q Y
 
 OUTPUT FILES:
-	for each input in the list specified by -i, a folder that contains the antiSMASH annotation for that genome. Folders are linked to their corresponding input file in the table specified by -o.```
+	for each input in the list specified by -i, a folder that contains the antiSMASH annotation for that genome stored in the directly specified by -d. Folders are linked to their corresponding input file in the table specified by -o. 
 ```
 ----------------------
 (2) cluster_renamer.pl
