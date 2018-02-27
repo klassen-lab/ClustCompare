@@ -120,42 +120,42 @@ done
 # create input file list
 
 for f in $(eval echo "$INPUT_DATA_PATH/*.gbff"); do
-	[ -e "$f" ] && ls $f >> genomes.list && echo "found $f, adding to input list" 
+	[ -e "$f" ] && ls $f >> $OUTPUT_DIR/genomes.list && echo "found $f, adding to input list" 
 done
 
 for f in $(eval echo "$INPUT_DATA_PATH/*.gbk"); do
-	[ -e "$f" ] && ls $f >> genomes.list && echo "found $f, adding to input list" 
+	[ -e "$f" ] && ls $f >> $OUTPUT_DIR/genomes.list && echo "found $f, adding to input list" 
 done
 
 for f in $(eval echo "$INPUT_DATA_PATH/*.embl"); do
-	[ -e "$f" ] && ls $f >> genomes.list && echo "found $f, adding to input list" 
+	[ -e "$f" ] && ls $f >> $OUTPUT_DIR/genomes.list && echo "found $f, adding to input list" 
 done
 
 for f in $(eval echo "$INPUT_DATA_PATH/*.fasta"); do
-	[ -e "$f" ] && ls $f >> genomes.list && echo "found $f, adding to input list" 
+	[ -e "$f" ] && ls $f >> $OUTPUT_DIR/genomes.list && echo "found $f, adding to input list" 
 done 
 
 for f in $(eval echo "$INPUT_DATA_PATH/*.fna"); do
-	[ -e "$f" ] && ls $f >> genomes.list && echo "found $f, adding to input list" 
+	[ -e "$f" ] && ls $f >> $OUTPUT_DIR/genomes.list && echo "found $f, adding to input list" 
 done
 
 for f in $(eval echo "$INPUT_DATA_PATH/*.fa"); do
-	[ -e "$f" ] && ls $f >> genomes.list && echo "found $f, adding to input list" 
+	[ -e "$f" ] && ls $f >> $OUTPUT_DIR/genomes.list && echo "found $f, adding to input list" 
 done
 
 # run mult_antiSMASH.pl
-perl mult_antiSMASH.pl -i genomes.list -c $NPROC -d $OUTPUT_DIR -o $OUTPUT_DIR/annotation_lookup.tsv
+perl mult_antiSMASH.pl -i $OUTPUT_DIR/genomes.list -c $NPROC -d $OUTPUT_DIR -o $OUTPUT_DIR/annotation_lookup.tsv
 
 # runs cluster_renamer.pl on newly annotated gbks
-ls $OUTPUT_DIR/*/*cluster*.gbk > BGCs.list
-perl cluster_renamer.pl -i BGCs.list -j $OUTPUT_DIR/annotation_lookup.tsv -c $NPROC -d $OUTPUT_DIR/BGC_gbks/ -l $OUTPUT_RESULTS_DIR/BGC_file_lookup.tsv -o $OUTPUT_RESULTS_DIR/nodes.tsv
+ls $OUTPUT_DIR/*/*cluster*.gbk > $OUTPUT_DIR/BGCs.list
+perl cluster_renamer.pl -i $OUTPUT_DIR/BGCs.list -j $OUTPUT_DIR/annotation_lookup.tsv -c $NPROC -d $OUTPUT_DIR/BGC_gbks/ -l $OUTPUT_RESULTS_DIR/BGC_file_lookup.tsv -o $OUTPUT_RESULTS_DIR/nodes.tsv
 
 # runs clusters_per_genome.pl on new nodes.tsv file
 perl clusters_per_genome.pl -i $OUTPUT_RESULTS_DIR/nodes.tsv -o $OUTPUT_RESULTS_DIR/clusters_per_genome.tsv
 
-# Cleans up src/
-rm genomes.list
-rm BGCs.list
+# Cleans up
+rm $OUTPUT_DIR/genomes.list
+rm $OUTPUT_DIR/BGCs.list
 
 # Add note to CHANGELOG.txt
 echo -e "* antiSMASH_annotations.sh v3.4 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> $LOG_FILE
