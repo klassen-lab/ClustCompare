@@ -4,6 +4,7 @@
 # Assumes antiSMASH_annotation.sh has been run first (or equivilent)
 
 # v1.0 February 21, 2018 
+# v1.1 February 27, 2018 - More general file handling
 
 usage()
 {
@@ -65,7 +66,7 @@ echo "Ouput data results files will be here: $OUTPUT_RESULTS_DIR"
 echo "Updating log: $LOG_FILE"
 
 # Add note to log
-echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* find_cluster_completeness.sh v1.0 started" >> $LOG_FILE 
+echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* find_cluster_completeness.sh v1.1 started" >> $LOG_FILE 
 
 # check for $INPUT_LOOKUP_PATH file
 if [ -e $INPUT_LOOKUP_PATH ]; then
@@ -83,20 +84,26 @@ else
 	exit
 fi
 
-# run find_cluster_completeness.pl
-perl find_cluster_completeness.pl -i $INPUT_LOOKUP_PATH -j $INPUT_NODES_PATH -c $NPROC -p $OUTPUT_DIR
-
-# moves find_cluster_completeness.pl output files
-if [ -d "${OUTPUT_RESULTS_DIR}" ]
+# check for $OUTPUT_DIR directory
+if [ -d $OUTPUT_DIR ]
 then
-	echo "${OUTPUT_RESULTS_DIR} found - BGC_fragmentation.tsv and nodes.tsv there"
+	echo "$OUTPUT_DIR found"
 else
-	echo "Making ${OUTPUT_RESULTS_DIR} - BGC_fragmentation.tsv and nodes.tsv there"
-	mkdir ${OUTPUT_RESULTS_DIR}
+	echo "$OUTPUT_DIR not found - creating"
+	mkdir $OUTPUT_DIR
 fi
-mv BGC_fragmentation.tsv ${OUTPUT_RESULTS_DIR}
-mv nodes.tsv ${OUTPUT_RESULTS_DIR}
+
+# check for $OUTPUT_RESULTS_DIR directory
+if [ -d $OUTPUT_RESULTS_DIR ]
+then
+	echo "$OUTPUT_RESULTS_DIR found"
+else
+	echo "$OUTPUT_RESULTS_DIR not found - creating"
+	mkdir $OUTPUT_RESULTS_DIR
+fi
+# run find_cluster_completeness.pl
+perl find_cluster_completeness.pl -i $INPUT_LOOKUP_PATH -j $INPUT_NODES_PATH -c $NPROC -n $OUTPUT_RESULTS_DIR/nodes.tsv -o $OUTPUT_RESULTS_DIR/BGC_fragmentation.tsv -p $OUTPUT_DIR
 
 # Add note to CHANGELOG.txt
-echo -e "* find_cluster_completeness.sh v1.0 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> $LOG_FILE
+echo -e "* find_cluster_completeness.sh v1.1 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> $LOG_FILE
 

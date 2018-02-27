@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 #
 # Jonathan Klassen
-# v2.1
-# February 15, 2018
+# v2.2
+# February 27, 2018
 #
 # script annotates all genomes in genome_list.list (e.g., generate using list_genomes.pl)
 # unzips if needed, then zips again at end
@@ -12,6 +12,7 @@
 # v1.2 disables as many extra antiSMASH outputs as possible
 # v2.0 formal input parameters, multithreaded
 # v2.1 outputs list of input file names and their corresponding output directories
+# v2.2 more flexible output parameters
 
 use strict;
 use warnings;
@@ -27,15 +28,16 @@ my $usage = "mult_antiSMASH.pl
 DEPENDANCIES: run_antiSMASH.py, Perl \"Parallel::ForkManager\" module
 
 USAGE:
--c	number of cores to use					DEFAULT: 1		e.g., perl mult_antiSMASH.pl -i inlist -c 4
+-c	number of cores to use					DEFAULT: 1			e.g., perl mult_antiSMASH.pl -i inlist -c 4
+-d	output directory for antiSMASH output folders		DEFAULT: ./			e.g., perl mult_antiSMASH.pl -i inlist -d ../Data/antiSMASH_annotations/
 -h	displays this usage statement (also using --help)
--i	input list of paths to the gbk files to be analyzed	REQUIRED		e.g., perl mult_antiSMASH.pl -i inlist
--k	enable the antiSMASH knownclusterblast function		DEFAULT: N		e.g., perl mult_antiSMASH.pl -i inlist -k Y
--o	output file listing intput & output files		DEFAULT: files.list	e.g., perl mult_antiSMASH.pl -i inlist -o outputs.list
--q	run quietly, i.e., no STDOUT (Y or N)			DEFAULT: N		e.g., perl multantiSMASH.pl -i inlist -q Y
+-i	input list of paths to the gbk files to be analyzed	REQUIRED			e.g., perl mult_antiSMASH.pl -i inlist
+-k	enable the antiSMASH knownclusterblast function		DEFAULT: N			e.g., perl mult_antiSMASH.pl -i inlist -k Y
+-o	output file listing intput & output files		DEFAULT: annotation_lookup.tsv	e.g., perl mult_antiSMASH.pl -i inlist -o outputs.list
+-q	run quietly, i.e., no STDOUT (Y or N)			DEFAULT: N			e.g., perl mult_antiSMASH.pl -i inlist -q Y
 
 OUTPUT FILES:
-	for each input in the list specified by -i, a folder that contains the antiSMASH annotation for that genome. Folders are linked to their corresponding input file in the table specified by -o.
+	for each input in the list specified by -i, a folder that contains the antiSMASH annotation for that genome stored in the directly specified by -d. Folders are linked to their corresponding input file in the table specified by -o. 
 ";
 
 # input arguements
@@ -43,6 +45,7 @@ OUTPUT FILES:
 my %options = ();
 GetOptions(
 	"c=i"  => \$options{cores},
+	"d=s"  => \$options{outdir},
 	"h"    => \$options{help},
 	"help" => \$options{help},
 	"i=s"  => \$options{infile},
@@ -63,7 +66,8 @@ die "Input file is not specified:\n, $usage" if (!$options{infile});
 
 unless ($options{cores}){             $options{cores} = 1};
 unless ($options{knownclusterblast}){ $options{knownclusterblast} = "N"};
-unless ($options{outfile}){           $options{outfile} = "files.list"};
+unless ($options{outfile}){           $options{outfile} = "annotation_lookup.tsv"};
+unless ($options{outdir}){            $options{outdir} = "."};
 unless ($options{quiet}){             $options{quiet} = "N"};
 
 # mystery input flags not allowed
@@ -72,18 +76,19 @@ die "Unrecognized command line arguments: @ARGV\n" if ($ARGV[0]);
 
 # checks correct parameter formatting
 
-die "Unrecognized command line arguements: -q = $options{knownclusterblast}\n$usage" unless ($options{knownclusterblast} eq "Y" or $options{knownclusterblast} eq "N");
-die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless ($options{quiet} eq "Y" or $options{quiet} eq "N");
+die "Unrecognized command line arguments: -q = $options{knownclusterblast}\n$usage" unless ($options{knownclusterblast} eq "Y" or $options{knownclusterblast} eq "N");
+die "Unrecognized command line arguments: -q = $options{quiet}\n$usage" unless ($options{quiet} eq "Y" or $options{quiet} eq "N");
 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-mult_antiSMASH.pl	Jonathan Klassen	v2.1	Feb 15, 2018
+mult_antiSMASH.pl	Jonathan Klassen	v2.2	Feb 27, 2018
 
 parameters used:
 	input file = $options{infile}
 	knownclusterblast activated = $options{knownclusterblast}
 	output file = $options{outfile}
+	output directory for antiSMASH annotations = $options{outdir}
 	number of cores = $options{cores}
 	quiet = $options{quiet}
 -----------------------------------------------------------------------------
@@ -134,9 +139,9 @@ sub mult_antiSMASH($){
 	my $counter = $_[0];
 	if ($options{quiet} eq "N"){ print "Aligning $genomes[$counter]: ", $counter + 1, " of ", scalar @genomes, "\n"};
 	if ($options{knownclusterblast} eq "Y"){
-		system "run_antismash.py -c 1 --knownclusterblast --disable-embl --disable-svg --outputfolder $names[$counter] $genomes[$counter]";
+		system "run_antismash.py -c 1 --knownclusterblast --disable-embl --disable-svg --outputfolder $options{outdir}/$names[$counter] $genomes[$counter]";
 	}
 	else {
-		system "run_antismash.py -c 1 --disable-embl --disable-svg --outputfolder $names[$counter] $genomes[$counter]";
+		system "run_antismash.py -c 1 --disable-embl --disable-svg --outputfolder $options{outdir}/$names[$counter] $genomes[$counter]";
 	}
 }

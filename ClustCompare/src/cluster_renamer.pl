@@ -6,6 +6,7 @@
 # v1.2 - June 30/17 - assumes new table each time
 # v2.0 - January 2, 2018 - formal input parameters, more generalizable input
 # v3.0 - February 21, 2018 - separates node table metadata from file lookups as a separate table
+# v3.1 - February 28, 2018 - make temp files in outdir specified by -d instead of cwd
 #
 # script collates and renames the clusters from each antiSMASH genomer
 # input is a list of antiSMASH clusters
@@ -83,7 +84,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-cluster_renamer.pl	Jonathan Klassen	v3.0	Feb 21, 2018
+cluster_renamer.pl	Jonathan Klassen	v3.1	Feb 28, 2018
 
 parameters used:
 	input file = $options{infile}
@@ -121,10 +122,8 @@ unless ($options{indirtable} eq "Not specified"){
 
 		s/\s+$//;
 		my @line = split /\t/, $_;
-#		print "@line\n";
 		$clusterdirs{$line[1]} = $line[0];
 	}
-#die join "**", keys %clusterdirs;
 }
 
 #############################################################################
@@ -141,7 +140,7 @@ mkdir $options{outdir} or die "Cannot make $options{outdir}";
 
 # make a temporary output file
 
-open (TEMP, ">temp") or die "Cannot open temporary output file in working directory";
+open (TEMP, ">$options{outdir}/temp") or die "Cannot open temporary output file in $options{outdir}";
 
 # multithreaded cluster parsing
 
@@ -164,7 +163,7 @@ my $counter = 0;
 # collate data from temp output file
 
 my %collated_data;
-open (INTEMP, "temp") or die "Cannot open temporary output file in working directory";
+open (INTEMP, "$options{outdir}/temp") or die "Cannot open temporary output file in working directory";
 while (<INTEMP>){
 	s/\s+$//;
 	my @line = split /\t/, $_;
@@ -173,7 +172,7 @@ while (<INTEMP>){
 	$collated_data{$line[0]}{Cluster_type} = $line[3];
 	$collated_data{$line[0]}{Source_contig_accession} = $line[4];
 }
-system "rm temp";
+system "rm $options{outdir}/temp";
 
 # generate node output file
 

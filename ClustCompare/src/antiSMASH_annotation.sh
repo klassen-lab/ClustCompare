@@ -6,6 +6,7 @@
 # v3.1 February 15, 2018 - Accommodates genomes.list output file
 # v3.2 February 19, 2018 - adds command line options for number of threads and data paths
 # v3.3 February 21, 2018 - modified data paths, accommodated new cluster_renamer.pl
+# v3.4 February 27, 2018 - perl scripts write directly to output folders
 
 usage()
 {
@@ -61,7 +62,7 @@ echo "Ouput data results files will be here: $OUTPUT_RESULTS_DIR"
 echo "Updating log: $LOG_FILE"
 
 # Add note to log
-echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* antiSMASH_annotations.sh v3.3 started" >> $LOG_FILE 
+echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* antiSMASH_annotations.sh v3.4 started" >> $LOG_FILE 
 
 
 # check for $INPUT_DATA_PATH directory
@@ -72,6 +73,23 @@ else
 	exit
 fi
 
+# check for $OUTPUT_DIR directory
+if [ -d $OUTPUT_DIR ]
+then
+	echo "$OUTPUT_DIR found"
+else
+	echo "$OUTPUT_DIR not found - creating"
+	mkdir $OUTPUT_DIR
+fi
+
+# check for $OUTPUT_RESULTS_DIR directory
+if [ -d $OUTPUT_RESULTS_DIR ]
+then
+	echo "$OUTPUT_RESULTS_DIR found"
+else
+	echo "$OUTPUT_RESULTS_DIR not found - creating"
+	mkdir $OUTPUT_RESULTS_DIR
+fi
 
 # unzip any zipped files, if they exist
 for f in $(eval echo "$INPUT_DATA_PATH/*.gbff.gz"); do
@@ -126,47 +144,19 @@ for f in $(eval echo "$INPUT_DATA_PATH/*.fa"); do
 done
 
 # run mult_antiSMASH.pl
-perl mult_antiSMASH.pl -i genomes.list -c $NPROC
-
-# moves output antiSMASH directories to ../Data/antiSMASH_annotations/
-if [ -d $OUTPUT_DIR ]
-then
-	echo "$OUTPUT_DIR found - moving antiSMASH output directories there"
-else
-	echo "Making $OUTPUT_DIR - moving antiSMASH directories there"
-	mkdir $OUTPUT_DIR
-fi
-mv */ $OUTPUT_DIR
-mv files.list $OUTPUT_DIR
+#perl mult_antiSMASH.pl -i genomes.list -c $NPROC -d $OUTPUT_DIR -o $OUTPUT_DIR/annotation_lookup.tsv
 
 # runs cluster_renamer.pl on newly annotated gbks
-ls ${OUTPUT_DIR}/*/*cluster*.gbk > BGCs.list
-perl cluster_renamer.pl -i BGCs.list -j ${OUTPUT_DIR}/files.list -c $NPROC
-
-# moves cluster_renamer.pl output files
-echo "Moving renamed clusters to $OUTPUT_DIR/BGC_gbks/"
-mv BGC_gbks $OUTPUT_DIR
-if [ -d "${OUTPUT_RESULTS_DIR}" ]
-then
-	echo "${OUTPUT_RESULTS_DIR}/ found - moving nodes.tsv and BGC_file_lookup.tsv there"
-else
-	echo "Making ${OUTPUT_RESULTS_DIR} - moving nodes.tsv and BGC_file_lookup.tsv there"
-	mkdir ${OUTPUT_RESULTS_DIR}
-fi
-mv nodes.tsv ${OUTPUT_RESULTS_DIR}
-mv BGC_file_lookup.tsv ${OUTPUT_RESULTS_DIR}
+ls $OUTPUT_DIR/*/*cluster*.gbk > BGCs.list
+perl cluster_renamer.pl -i BGCs.list -j $OUTPUT_DIR/annotation_lookup.tsv -c $NPROC -d $OUTPUT_DIR/BGC_gbks/ -l $OUTPUT_RESULTS_DIR/BGC_file_lookup.tsv -o $OUTPUT_RESULTS_DIR/nodes.tsv
 
 # runs clusters_per_genome.pl on new nodes.tsv file
-perl clusters_per_genome.pl -i ${OUTPUT_RESULTS_DIR}/nodes.tsv
-
-# moves clusters_per_genome.pl output files
-echo "Moving clusters_per_genome.tsv to ${OUTPUT_RESULTS_DIR}"
-mv clusters_per_genome.tsv ${OUTPUT_RESULTS_DIR}
+perl clusters_per_genome.pl -i $OUTPUT_RESULTS_DIR/nodes.tsv -o $OUTPUT_RESULTS_DIR/clusters_per_genome.tsv
 
 # Cleans up src/
 rm genomes.list
 rm BGCs.list
 
 # Add note to CHANGELOG.txt
-echo -e "* antiSMASH_annotations.sh v3.3 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> $LOG_FILE
+echo -e "* antiSMASH_annotations.sh v3.4 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> $LOG_FILE
 
