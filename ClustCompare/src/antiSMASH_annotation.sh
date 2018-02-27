@@ -144,7 +144,7 @@ for f in $(eval echo "$INPUT_DATA_PATH/*.fa"); do
 done
 
 # run mult_antiSMASH.pl
-#perl mult_antiSMASH.pl -i genomes.list -c $NPROC -d $OUTPUT_DIR -o $OUTPUT_DIR/annotation_lookup.tsv
+perl mult_antiSMASH.pl -i genomes.list -c $NPROC -d $OUTPUT_DIR -o $OUTPUT_DIR/annotation_lookup.tsv
 
 # runs cluster_renamer.pl on newly annotated gbks
 ls $OUTPUT_DIR/*/*cluster*.gbk > BGCs.list
