@@ -145,8 +145,17 @@ These scripts compare the orthologous pfam domain content between a set of input
 -----------------------
 cluster_pfam_BBH_comparison.sh
 
-Wrapper script for the pipeline, consisting of 7 steps: (1) mult_gbk_to_faa.pl to convert gbk-formatted BGCs (e.g., as produced by antiSMASH) to multiple protein fasta files that can be searched by pfamscan; (2) mult_pfamscan.pl to perform a pfamscan analysis of domain content on each BGC; (3) mult_pfamscan_parser.pl to collate the domains present in each BGC and produces a protein fasta file for each domain; (4) mult_blastp.pl to compare each domain to all other domains in the entire dataset (including all BGCs); (5) blastp_to_BBH_list.pl to identify bidirection best BLAST hits (BBHs) for each domain as a means to identify orthologous domains; (6) make_cluster_similarities.pl to tabulate the number of orthologous domains that are shared between each cluster, out of all possible domains; and (7) cluster_similarity_table_parser.pl to filter the final edge table based on the number of shared domains, the percentage of shared domains out of all possible domains, and the sequence similarity between the shared domains. Designed to follow antiSMASH_annotation.sh, and assumes annotated BGCs in gbk format is located in ../Data/BGC_gbks/. All intermediate data is stored in ../Data/, and results tables are stored in ../Results/.
-
+Wrapper script for the pipeline, consisting of 7 steps: (1) mult_gbk_to_faa.pl to convert gbk-formatted BGCs (e.g., as produced by antiSMASH) to multiple protein fasta files that can be searched by pfamscan; (2) mult_pfamscan.pl to perform a pfamscan analysis of domain content on each BGC; (3) mult_pfamscan_parser.pl to collate the domains present in each BGC and produces a protein fasta file for each domain; (4) mult_blastp.pl to compare each domain to all other domains in the entire dataset (including all BGCs); (5) blastp_to_BBH_list.pl to identify bidirection best BLAST hits (BBHs) for each domain as a means to identify orthologous domains; (6) make_cluster_similarities.pl to tabulate the number of orthologous domains that are shared between each cluster, out of all possible domains; and (7) cluster_similarity_table_parser.pl to filter the final edge table based on the number of shared domains, the percentage of shared domains out of all possible domains, and the sequence similarity between the shared domains. Designed to follow antiSMASH_annotation.sh, and assumes annotated BGCs in gbk format is located in the directory specified by -i. Requires specifying a folder that contains BOTH pfamscan.pl and the pfam HMM files using -p. All intermediate data is stored in folder specified by -o, and results tables are stored in the folder specified by -r.
+```
+USAGE:"
+-c    number of CPU threads						DEFAULT: the number of available cores
+-i    path to directory containing input data files			DEFAULT: ../Data/antiSMASH_annotations/BGC_gbks
+-o    path to directory where output data files should be placed	DEFAULT: ../Data/cluster_pfam_BBH_comparison
+-r    path to directory where output results files should be placed	DEFAULT: ../Results
+-p    path to directory that contains pfamscan.pl and the pfam HMMs	DEFAULT: ~/Tools/PfamScan
+-l    path to log file to update					DEFAULT: ../CHANGELOG.txt
+-h    print this help message
+```
 ----------------------
 (1) mult_gbk_to_faa.pl
 
