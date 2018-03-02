@@ -7,6 +7,7 @@
 # v2.0 - January 2, 2018 - formal input parameters, more generalizable input
 # v3.0 - February 21, 2018 - separates node table metadata from file lookups as a separate table
 # v3.1 - February 28, 2018 - make temp files in outdir specified by -d instead of cwd
+# v3.2 - March 2, 2018 - Fix off by one error in file names
 #
 # script collates and renames the clusters from each antiSMASH genomer
 # input is a list of antiSMASH clusters
@@ -84,7 +85,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-cluster_renamer.pl	Jonathan Klassen	v3.1	Feb 28, 2018
+cluster_renamer.pl	Jonathan Klassen	v3.2	Mar 2, 2018
 
 parameters used:
 	input file = $options{infile}
@@ -149,7 +150,8 @@ sub cluster_parser($);
 for my $a (0..$#clusters){
 	$pm->start and next;
 	my @return = cluster_parser($a);
-	system "cp $return[2] $options{outdir}/cluster$a.gbk";
+	my $num = $a + 1;
+	system "cp $return[2] $options{outdir}/cluster$num.gbk";
 	print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\n";
 	$pm->finish;
 }
