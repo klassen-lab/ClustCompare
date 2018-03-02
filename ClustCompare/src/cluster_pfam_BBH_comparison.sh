@@ -67,7 +67,7 @@ echo "Ouput data results files will be here: $OUTPUT_RESULTS_DIR"
 echo "Updating log: $LOG_FILE"
 
 # Add note to CHANGELOG.txt
-echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* cluster_pfam_BBH_comparison.sh v3.0 has started" >> ../CHANGELOG.txt 
+echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* cluster_pfam_BBH_comparison.sh v3.0 has started" >> $LOG_FILE 
 
 # check for $INPUT_DATA_PATH directory
 if [ -d $INPUT_DATA_PATH ]; then
@@ -160,6 +160,6 @@ rm $OUTPUT_DIR/cluster_domain_faas.list
 rm $OUTPUT_DIR/cluster_blastps.list
 
 # Add note to CHANGELOG.txt
-echo -e "* cluster_pfam_BBH_comparison.sh v3.0 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> ../CHANGELOG.txt
+echo -e "* cluster_pfam_BBH_comparison.sh v3.0 finished `date +%Y-%m-%d:%H:%M:%S`\n" >> $LOG_FILE
  
 
