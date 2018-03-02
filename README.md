@@ -40,7 +40,7 @@ The overall pipeline is designed to produce a network of BGC similarities. There
 
 By default, the pipeline has the following directory structure, which is assumed by antiSMASH_annotation.sh and cluster_pfam_BBH_comparison.sh:
 ```
-BGC_comparer_v1/
+ClustCompare/
 	|----- src/ (containing all pipeline scripts)
 	|----- Data/ (folder for all data used by the pipeline) 
 	|	|-----genomes/ (containing all input genomes for the pipeline)
