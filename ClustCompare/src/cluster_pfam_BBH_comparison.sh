@@ -96,7 +96,7 @@ else
 fi
 
 # check for $PFAM_DIR directory
-if [ -d "$HOME/Tools/PfamScan/" ]; then
+if [ -d $PFAM_DIR ]; then
 	echo "$PFAM_DIR found"
 else
 	echo "$PFAM_DIR not found - exiting"
@@ -128,7 +128,7 @@ done
 
 # run mult_pfamscan_parser.pl
 mkdir $OUTPUT_DIR/BGC_domain_faas
-perl mult_pfamscan_parser.pl -i $OUTPUT_DIR/cluster_pfamscans.list -j $OUTPUT_DIR/cluster_faas.list -c 4 -d $OUTPUT_DIR/BGC_domain_faas -o $OUTPUT_RESULTS_DIR/cluster_domains.tsv
+perl mult_pfamscan_parser.pl -i $OUTPUT_DIR/cluster_pfamscans.list -j $OUTPUT_DIR/cluster_faas.list -c $NPROC -d $OUTPUT_DIR/BGC_domain_faas -o $OUTPUT_RESULTS_DIR/cluster_domains.tsv
 
 # make BLAST database of all domain faas
 ls $OUTPUT_DIR/BGC_domain_faas/*.faa > $OUTPUT_DIR/cluster_domain_faas.list
