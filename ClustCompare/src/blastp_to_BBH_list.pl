@@ -3,6 +3,7 @@
 # Jonathan Klassen
 # v1.0 - June 29/17
 # v2.0 - January 8, 2017 - improved input parameter parsing, more generalized input/output
+# v2.1 - March 5, 2018 - fixed bug allowing matches between multiple domains in the same cluster
 #
 # Parses multiple BLASTp outputs against a common database to generate a list of bidirectional best BLAST hits
 # Stores output table in ../Data/antiSMASH_annotations/domain_comparisons/BLASTp_vs_all_clusters/
@@ -70,7 +71,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-blastp_to_BBH.pl	Jonathan Klassen	v2.0	Jan 8, 2018
+blastp_to_BBH.pl	Jonathan Klassen	v2.1	Mar 5, 2018
 
 parameters used:
 	percent sequence id threshold = $options{id}
@@ -110,11 +111,13 @@ foreach my $infile (@infiles){
 		my @line = split /\t/;
 		next if (scalar @line != 14);
 		next if ($line[0] eq $line[1]); # no self hits
-		next if ($best_hits{$line[0]}{$line[1]} and $best_hits{$line[0]}{$line[1]} < $line[2]); # only top hits kept
 		next if ($line[2] < $options{id}); # no low %ID hits
 		(my $name1 = $line[0]) =~ s/_\w*$//; # no hits to own cluster
 		(my $name2 = $line[1]) =~ s/_\w*$//;
 		next if ($name1 eq $name2);
+		my $cat = $name2."_"; # no hits to different domains in same cluster
+		my @greps = grep (/$cat/, keys %{$best_hits{$line[0]}});
+		next if (scalar @greps == 1);
 		my $max_length = 0; # no low % overlap hits
 		if ($line[12] >= $line[13]){
 			$max_length = $line[12];
