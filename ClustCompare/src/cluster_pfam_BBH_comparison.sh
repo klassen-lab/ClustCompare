@@ -73,7 +73,7 @@ echo -e "## `date +%Y-%m-%d:%H:%M:%S` \n\n* cluster_pfam_BBH_comparison.sh v3.0 
 if [ -d $INPUT_DATA_PATH ]; then
 	echo "$INPUT_DATA_PATH found"
 else
-	echo "$INPUT_DATA_PATH not found - exiting antiSMASH_annotation.sh"
+	echo "$INPUT_DATA_PATH not found - exiting cluster_pfam_BBH_comparison.sh"
 	exit
 fi
 
