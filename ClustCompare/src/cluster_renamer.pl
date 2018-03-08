@@ -179,7 +179,7 @@ while (<INTEMP>){
 	$collated_data{$line[0]}{Top_known_cluster} = $line[5];
 
 }
-#system "rm $options{outdir}/temp";
+system "rm $options{outdir}/temp";
 
 # generate node output file
 
