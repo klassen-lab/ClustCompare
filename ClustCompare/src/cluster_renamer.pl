@@ -168,26 +168,29 @@ my %collated_data;
 open (INTEMP, "$options{outdir}/temp") or die "Cannot open temporary output file in working directory";
 while (<INTEMP>){
 	s/\s+$//;
-	s/1\. (BGC\w*)\s*(.*)_biosyn\w*/\1-\2_BGC_/;          # adjust knowncluster column
-	s/_ \(/_/;
-	s/\%.*/\%/;
+	s/1\. (BGC\w*)/\1/;
+	s/_biosyn\w*/_BGC\t/;          # adjust knowncluster column
+	s/\((.*)\%.*$/\1/;
+#	s/\%.*/\%/;
 	my @line = split /\t/, $_;
 	$collated_data{$line[0]}{Source_description} = $line[1];
 	$collated_data{$line[0]}{Cluster_file} = $line[2];
 	$collated_data{$line[0]}{Cluster_type} = $line[3];
 	$collated_data{$line[0]}{Source_contig_accession} = $line[4];
-	$collated_data{$line[0]}{Top_known_cluster} = $line[5];
+	$collated_data{$line[0]}{Top_known_cluster_id} = $line[5];
+	$collated_data{$line[0]}{Top_known_cluster_name} = $line[6];
+	$collated_data{$line[0]}{Top_known_cluster_score} = $line[7];
 
 }
-#system "rm $options{outdir}/temp";
+system "rm $options{outdir}/temp";
 
 # generate node output file
 
 open (OUTNODES, ">$options{outnodes}") or die "Cannot open output node file $options{outnodes}\n$usage";
-print OUTNODES "Cluster_id\tSource_description\tCluster_type\tTop_known_cluster\n";
+print OUTNODES "Cluster_id\tSource_description\tCluster_type\tTop_known_cluster_id\tTop_known_cluster_name\tTop_known_cluster_score\n";
 foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
 	my $num = $cluster_id + 1;
-	print OUTNODES "cluster$num\t$collated_data{$cluster_id}{Source_description}\t$collated_data{$cluster_id}{Cluster_type}\t$collated_data{$cluster_id}{Top_known_cluster}\n";
+	print OUTNODES "cluster$num\t$collated_data{$cluster_id}{Source_description}\t$collated_data{$cluster_id}{Cluster_type}\t$collated_data{$cluster_id}{Top_known_cluster_id}\t$collated_data{$cluster_id}{Top_known_cluster_name}\t$collated_data{$cluster_id}{Top_known_cluster_score}\n";
 }
 
 # generate lookup table output file
