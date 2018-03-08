@@ -152,7 +152,7 @@ for my $a (0..$#clusters){
 	my @return = cluster_parser($a);
 	my $num = $a + 1;
 	system "cp $return[2] $options{outdir}/cluster$num.gbk";
-	print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\n";
+	print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\t$return[5]\n";
 	$pm->finish;
 }
 $pm->wait_all_children();
@@ -168,21 +168,26 @@ my %collated_data;
 open (INTEMP, "$options{outdir}/temp") or die "Cannot open temporary output file in working directory";
 while (<INTEMP>){
 	s/\s+$//;
+	s/1\. (BGC\w*)\s*(.*)_biosyn\w*/\1-\2_BGC_/;          # adjust knowncluster column
+	s/_ \(/_/;
+	s/\%.*/\%/;
 	my @line = split /\t/, $_;
 	$collated_data{$line[0]}{Source_description} = $line[1];
 	$collated_data{$line[0]}{Cluster_file} = $line[2];
 	$collated_data{$line[0]}{Cluster_type} = $line[3];
 	$collated_data{$line[0]}{Source_contig_accession} = $line[4];
+	$collated_data{$line[0]}{Top_known_cluster} = $line[5];
+
 }
-system "rm $options{outdir}/temp";
+#system "rm $options{outdir}/temp";
 
 # generate node output file
 
 open (OUTNODES, ">$options{outnodes}") or die "Cannot open output node file $options{outnodes}\n$usage";
-print OUTNODES "Cluster_id\tSource_description\tCluster_type\n";
+print OUTNODES "Cluster_id\tSource_description\tCluster_type\tTop_known_cluster\n";
 foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
 	my $num = $cluster_id + 1;
-	print OUTNODES "cluster$num\t$collated_data{$cluster_id}{Source_description}\t$collated_data{$cluster_id}{Cluster_type}\n";
+	print OUTNODES "cluster$num\t$collated_data{$cluster_id}{Source_description}\t$collated_data{$cluster_id}{Cluster_type}\t$collated_data{$cluster_id}{Top_known_cluster}\n";
 }
 
 # generate lookup table output file
@@ -214,20 +219,24 @@ sub cluster_parser($){
 	if ($options{quiet} eq "N"){ print "Collating cluster $clusters[$counter]: ", $counter + 1, " of ", scalar @clusters, "\n"};
 	my $filepath = $clusters[$counter]; 						# filepath
 
-	my ($descr, $type, $accession);
+	my ($descr, $type, $accession, $top_known);
 	my $seqio_obj = Bio::SeqIO->new(-file => $clusters[$counter], -format => "genbank");
 	while (my $seq_obj = $seqio_obj->next_seq){ # loop through contigs
 		$descr = $seq_obj->desc; 						# contig description
 		$accession = $seq_obj->accession_number;			 	# contig accession number
 		for my $feat_obj ($seq_obj->get_SeqFeatures){ # loop through annotation features
 			if ($feat_obj->primary_tag eq "cluster"){       
-				my @cluster_type;
-				push @cluster_type, $feat_obj->get_tag_values("product");	
+				my @cluster_type; 
+				my @knownclusters;
+				push @cluster_type, $feat_obj->get_tag_values("product");
+				push @knownclusters, $feat_obj->get_tag_values("knownclusterblast")
+				    if ($feat_obj->has_tag("knownclusterblast"));
+				$top_known = $knownclusters[0];
 				$type = $cluster_type[0];				# BGC type
 			}
 		}	
 	}	
-	return ($counter, $descr, $filepath, $type, $accession); 
+	return ($counter, $descr, $filepath, $type, $accession, $top_known); 
 }
 
 
