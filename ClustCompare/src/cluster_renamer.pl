@@ -8,6 +8,7 @@
 # v3.0 - February 21, 2018 - separates node table metadata from file lookups as a separate table
 # v3.1 - February 28, 2018 - make temp files in outdir specified by -d instead of cwd
 # v3.2 - March 2, 2018 - Fix off by one error in file names
+# v3.3 - March 8, 2018 - Add knownclusterblast results
 #
 # script collates and renames the clusters from each antiSMASH genomer
 # input is a list of antiSMASH clusters
@@ -85,7 +86,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-cluster_renamer.pl	Jonathan Klassen	v3.2	Mar 2, 2018
+cluster_renamer.pl	Jonathan Klassen	v3.3	Mar 8, 2018
 
 parameters used:
 	input file = $options{infile}
