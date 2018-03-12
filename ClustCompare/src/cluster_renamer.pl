@@ -9,6 +9,7 @@
 # v3.1 - February 28, 2018 - make temp files in outdir specified by -d instead of cwd
 # v3.2 - March 2, 2018 - Fix off by one error in file names
 # v3.3 - March 8, 2018 - Add knownclusterblast results
+# v3.4 - March 12, 2018 - Fix thread collisions when writing output files
 #
 # script collates and renames the clusters from each antiSMASH genomer
 # input is a list of antiSMASH clusters
@@ -26,9 +27,7 @@ use Bio::SeqIO;
 ############################################################################
 
 my $usage = "cluster_renamer.pl
-
 DEPENDANCIES: Perl \"Parallel::ForkManager\" module, BioPerl
-
 USAGE:
 -c	number of cores to use								DEFAULT: 1			e.g., perl cluster_renamer.pl -i inlist -c 4
 -d	output directory for renamed cluster gbk files					DEFAULT: BGC_gbks		e.g., perl cluster_renamer.pl -i inlist -d renamed_clusters
@@ -38,7 +37,6 @@ USAGE:
 -l	output tab-delimited look-up table linking clusters to source data		DEFAULT: BGC_file_lookup.tsv	e.g., perl cluster_renamer.pl -i inlist -l lookup
 -o	output tab-delimited table of cluster names (node table)			DEFAULT: nodes.tsv		e.g., perl cluster_renamer.pl -i inlist -o clusters.tsv
 -q	run quietly, i.e., no STDOUT (Y or N)						DEFAULT: N			e.g., perl cluster_renamer.pl -i inlist -q Y
-
 OUTPUT FILES:
 	A table specified by -o lists metadata for each cluster, such as can be used to annotate nodes in a cluster similarity network. A second table specified by -l produces a look-up table linking each cluster to their cognate genomes and scaffolds.
 ";
@@ -86,8 +84,7 @@ die "Unrecognized command line arguements: -q = $options{quiet}\n$usage" unless 
 # print parameters unless -q flag selected
 
 print "-----------------------------------------------------------------------------
-cluster_renamer.pl	Jonathan Klassen	v3.3	Mar 8, 2018
-
+cluster_renamer.pl	Jonathan Klassen	v3.4	Mar 12, 2018
 parameters used:
 	input file = $options{infile}
 	input table listing annotation directories = $options{indirtable}
@@ -140,10 +137,6 @@ if (-d $options{outdir}){ die "$options{outdir}\/ already exists, existing clust
 
 mkdir $options{outdir} or die "Cannot make $options{outdir}";
 
-# make a temporary output file
-
-open (TEMP, ">$options{outdir}/temp") or die "Cannot open temporary output file in $options{outdir}";
-
 # multithreaded cluster parsing
 
 my $pm = new Parallel::ForkManager($options{cores});
@@ -153,45 +146,49 @@ for my $a (0..$#clusters){
 	my @return = cluster_parser($a);
 	my $num = $a + 1;
 	system "cp $return[2] $options{outdir}/cluster$num.gbk";
-	if ($return[5]){ print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\t$return[5]\n" }
-	else { print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\n" }
 	$pm->finish;
 }
 $pm->wait_all_children();
 my $counter = 0;
 
 #############################################################################
-# Generate final tables
+# Collate data from temp output file
 #############################################################################
-
-# collate data from temp output file
 
 my %collated_data;
 my @node_table_header = ("Source_description", "Cluster_file", "Cluster_type", "Source_contig_accession"); 
-open (INTEMP, "$options{outdir}/temp") or die "Cannot open temporary output file in working directory";
-while (<INTEMP>){
-	s/\s+$//;
-	s/1\. (BGC\w*)/$1/;
-	s/_biosyn\w*/_BGC\t/;          # adjust knowncluster column
-	s/\((.*)\%.*$/$1/;
-#	s/\%.*/\%/;
-	my @line = split /\t/, $_;
-	$collated_data{$line[0]}{Source_description} = $line[1];
-	$collated_data{$line[0]}{Cluster_file} = $line[2];
-	$collated_data{$line[0]}{Cluster_type} = $line[3];
-	$collated_data{$line[0]}{Source_contig_accession} = $line[4];
-	if ($line[5]){
-		$node_table_header[4] = "Top_known_cluster_id";
-		$collated_data{$line[0]}{Top_known_cluster_id} = $line[5];
-		$node_table_header[5] = "Top_known_cluster_name";
-		$collated_data{$line[0]}{Top_known_cluster_name} = $line[6];
-		$node_table_header[6] = "Top_known_cluster_score";
-		$collated_data{$line[0]}{Top_known_cluster_score} = $line[7];
-	}
-}
-#system "rm $options{outdir}/temp";
+for my $a (0..$#clusters){
+	my $num = $a + 1;
 
-# generate node output file
+	open (INTEMP, "$options{outdir}/$num.temp") or die "Cannot open $options{outdir}/$num.temp";
+
+	while (<INTEMP>){
+		s/\s+$//;
+		s/1\. (BGC\w*)/$1/;
+		s/_biosyn\w*/_BGC\t/;          # adjust knowncluster column
+		s/\((.*)\%.*$/$1/;
+	#	s/\%.*/\%/;
+		my @line = split /\t/, $_;
+		$collated_data{$line[0]}{Source_description} = $line[1];
+		$collated_data{$line[0]}{Cluster_file} = $line[2];
+		$collated_data{$line[0]}{Cluster_type} = $line[3];
+		$collated_data{$line[0]}{Source_contig_accession} = $line[4];
+		if ($line[5]){
+			$node_table_header[4] = "Top_known_cluster_id";
+			$collated_data{$line[0]}{Top_known_cluster_id} = $line[5];
+			$node_table_header[5] = "Top_known_cluster_name";
+			$collated_data{$line[0]}{Top_known_cluster_name} = $line[6];
+			$node_table_header[6] = "Top_known_cluster_score";
+			$collated_data{$line[0]}{Top_known_cluster_score} = $line[7];
+		}
+	}
+	close INTEMP;
+	system "rm $options{outdir}/$num.temp";
+}
+
+#############################################################################
+# Generate node output file
+#############################################################################
 
 open (OUTNODES, ">$options{outnodes}") or die "Cannot open output node file $options{outnodes}\n$usage";
 print OUTNODES "Cluster_id\t";
@@ -201,8 +198,8 @@ foreach my $node_table_key (@node_table_header){
 print OUTNODES "\n";
 #print OUTNODES "Cluster_id\tSource_description\tCluster_type\tTop_known_cluster_id\tTop_known_cluster_name\tTop_known_cluster_score\n";
 foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
-	my $num = $cluster_id + 1;
-	print OUTNODES "cluster$num";
+#	my $num = $cluster_id + 1;
+	print OUTNODES "cluster$cluster_id";
 	foreach my $node_table_key (@node_table_header){
 		print OUTNODES "\t$collated_data{$cluster_id}{$node_table_key}";
 	}
@@ -214,8 +211,8 @@ foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
 open (OUTLOOKUP, ">$options{outlookup}") or die "Cannot open output lookup table file $options{outlookup}\n$usage";
 print OUTLOOKUP "Cluster_id\tCluster_file\tSource_genome_file\tSource_contig_accession\n";
 foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
-	my $num = $cluster_id + 1;
-	print OUTLOOKUP "cluster$num\t$collated_data{$cluster_id}{Cluster_file}\t";
+	#my $num = $cluster_id + 1;
+	print OUTLOOKUP "cluster$cluster_id\t$collated_data{$cluster_id}{Cluster_file}\t";
 	my $dirname = $collated_data{$cluster_id}{Cluster_file};
 	$dirname =~ s/\/(\w|\.|\[|\]|\(|\))+$//;
 	$dirname =~ s/^.+\///;
@@ -234,6 +231,8 @@ foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
 
 sub cluster_parser($){
 	my $counter = $_[0];								# cluster id
+	my $num = $counter + 1;
+
 	my @return;
 	if ($options{quiet} eq "N"){ print "Collating cluster $clusters[$counter]: ", $counter + 1, " of ", scalar @clusters, "\n"};
 	my $filepath = $clusters[$counter]; 						# filepath
@@ -254,9 +253,19 @@ sub cluster_parser($){
 				$type = $cluster_type[0];				# BGC type
 			}
 		}	
-	}	
+	}
+
+	# collates summary lines as temp files to avoid thread collisions
+
+	open (OUTSUMMARY, ">$options{outdir}/$num.temp") or die "Cannot open $options{outdir}/$num.temp";
+	print OUTSUMMARY "$num\t$descr\t$filepath\t$type\t$accession\t";
+		if ($top_known){
+			print OUTSUMMARY "$top_known\n";
+		}
+		else {
+			print OUTSUMMARY "\n";
+		}
+	close OUTSUMMARY;
+	
 	return ($counter, $descr, $filepath, $type, $accession, $top_known); 
 }
-
-
-
