@@ -153,7 +153,8 @@ for my $a (0..$#clusters){
 	my @return = cluster_parser($a);
 	my $num = $a + 1;
 	system "cp $return[2] $options{outdir}/cluster$num.gbk";
-	print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\t$return[5]\n";
+	if ($return[5]){ print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\t$return[5]\n" }
+	else { print TEMP "$a\t$return[1]\t$return[2]\t$return[3]\t$return[4]\n" }
 	$pm->finish;
 }
 $pm->wait_all_children();
@@ -166,32 +167,46 @@ my $counter = 0;
 # collate data from temp output file
 
 my %collated_data;
+my @node_table_header = ("Source_description", "Cluster_file", "Cluster_type", "Source_contig_accession"); 
 open (INTEMP, "$options{outdir}/temp") or die "Cannot open temporary output file in working directory";
 while (<INTEMP>){
 	s/\s+$//;
-	s/1\. (BGC\w*)/\1/;
+	s/1\. (BGC\w*)/$1/;
 	s/_biosyn\w*/_BGC\t/;          # adjust knowncluster column
-	s/\((.*)\%.*$/\1/;
+	s/\((.*)\%.*$/$1/;
 #	s/\%.*/\%/;
 	my @line = split /\t/, $_;
 	$collated_data{$line[0]}{Source_description} = $line[1];
 	$collated_data{$line[0]}{Cluster_file} = $line[2];
 	$collated_data{$line[0]}{Cluster_type} = $line[3];
 	$collated_data{$line[0]}{Source_contig_accession} = $line[4];
-	$collated_data{$line[0]}{Top_known_cluster_id} = $line[5];
-	$collated_data{$line[0]}{Top_known_cluster_name} = $line[6];
-	$collated_data{$line[0]}{Top_known_cluster_score} = $line[7];
-
+	if ($line[5]){
+		$node_table_header[4] = "Top_known_cluster_id";
+		$collated_data{$line[0]}{Top_known_cluster_id} = $line[5];
+		$node_table_header[5] = "Top_known_cluster_name";
+		$collated_data{$line[0]}{Top_known_cluster_name} = $line[6];
+		$node_table_header[6] = "Top_known_cluster_score";
+		$collated_data{$line[0]}{Top_known_cluster_score} = $line[7];
+	}
 }
-system "rm $options{outdir}/temp";
+#system "rm $options{outdir}/temp";
 
 # generate node output file
 
 open (OUTNODES, ">$options{outnodes}") or die "Cannot open output node file $options{outnodes}\n$usage";
-print OUTNODES "Cluster_id\tSource_description\tCluster_type\tTop_known_cluster_id\tTop_known_cluster_name\tTop_known_cluster_score\n";
+print OUTNODES "Cluster_id\t";
+foreach my $node_table_key (@node_table_header){
+	print OUTNODES "$node_table_key\t";
+}
+print OUTNODES "\n";
+#print OUTNODES "Cluster_id\tSource_description\tCluster_type\tTop_known_cluster_id\tTop_known_cluster_name\tTop_known_cluster_score\n";
 foreach my $cluster_id (sort {$a <=> $b} keys %collated_data){
 	my $num = $cluster_id + 1;
-	print OUTNODES "cluster$num\t$collated_data{$cluster_id}{Source_description}\t$collated_data{$cluster_id}{Cluster_type}\t$collated_data{$cluster_id}{Top_known_cluster_id}\t$collated_data{$cluster_id}{Top_known_cluster_name}\t$collated_data{$cluster_id}{Top_known_cluster_score}\n";
+	print OUTNODES "cluster$num";
+	foreach my $node_table_key (@node_table_header){
+		print OUTNODES "\t$collated_data{$cluster_id}{$node_table_key}";
+	}
+	print OUTNODES "\n";
 }
 
 # generate lookup table output file
@@ -242,5 +257,6 @@ sub cluster_parser($){
 	}	
 	return ($counter, $descr, $filepath, $type, $accession, $top_known); 
 }
+
 
 
